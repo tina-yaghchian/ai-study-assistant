@@ -1,40 +1,88 @@
-# AI Study Assistant
+# 🤖 AI Study Assistant
 
-An AI-powered study assistant that helps university students turn lecture notes into clean study material, practice quizzes, and interactive question-and-answer sessions.
+An AI-powered study assistant designed to help university students turn lecture notes into useful study material.
 
-## Features
+Upload your lecture notes as a PDF, generate clean study notes, create practice quizzes, or ask questions directly about the material.
 
+---
+
+## ✨ Features
+
+### 📄 Lecture Note Processing
 - Upload lecture notes as PDF files
-- Extract and clean text from lecture notes
-- Generate structured study notes
-- Generate practice quizzes with answers
-- Ask questions about uploaded lecture material
-- Retrieve relevant sections of lecture notes using ChromaDB
-- Generate beginner-friendly explanations
-- Format mathematical expressions using LaTeX
+- Extract text from uploaded documents
+- Clean and format messy PDF text
+- Split lecture material into searchable chunks
 
-## Tech Stack
+### 📝 AI Study Notes
+Generate structured study notes from your lecture material, including:
 
-- Python
-- Streamlit
-- Ollama
-- ChromaDB
-- PyPDF
-- LaTeX / Markdown
+- Lecture summaries
+- Main topics
+- Key definitions
+- Important formulas
+- Worked examples
+- Exam tips
 
-## How It Works
+Mathematical expressions are formatted using LaTeX for readability.
 
-1. The user uploads a PDF containing lecture notes.
-2. The application extracts the text using PyPDF.
-3. The extracted text is cleaned and divided into smaller chunks.
-4. Ollama generates study notes or practice questions from the lecture material.
-5. ChromaDB stores the lecture-note chunks and retrieves the most relevant sections when the user asks a question.
-6. Ollama uses the retrieved material to generate a contextual answer.
+### 🧠 Practice Quiz Generation
+Automatically generate practice questions based on uploaded lecture material, including answers to help with self-study.
 
-## Setup
+### 💬 Ask Questions About Your Notes
+Ask questions about your lecture material and receive answers based on the most relevant sections of your notes.
 
-### 1. Clone the repository
+The application uses ChromaDB to retrieve relevant lecture-note chunks before generating an answer.
 
-```bash
-git clone https://github.com/YOUR-USERNAME/ai-study-assistant.git
-cd ai-study-assistant
+---
+
+## 🛠️ Tech Stack
+
+| Technology | Purpose |
+|------------|---------|
+| **Python** | Core application |
+| **Streamlit** | Interactive web interface |
+| **Ollama** | Local AI model inference |
+| **ChromaDB** | Vector-based document retrieval |
+| **PyPDF** | PDF text extraction |
+| **LaTeX** | Mathematical formatting |
+
+---
+
+## 🔍 How It Works
+
+```text
+                ┌──────────────────┐
+                │  Upload Lecture  │
+                │       PDF        │
+                └────────┬─────────┘
+                         │
+                         ▼
+                ┌──────────────────┐
+                │  Extract & Clean │
+                │      Text        │
+                └────────┬─────────┘
+                         │
+                         ▼
+                ┌──────────────────┐
+                │ Split Into Text  │
+                │      Chunks      │
+                └────────┬─────────┘
+                         │
+                         ▼
+                ┌──────────────────┐
+                │    ChromaDB      │
+                │     Retrieval    │
+                └────────┬─────────┘
+                         │
+                         ▼
+                ┌──────────────────┐
+                │      Ollama      │
+                │    AI Model      │
+                └────────┬─────────┘
+                         │
+                         ▼
+                ┌──────────────────┐
+                │ Study Notes /    │
+                │ Quiz / Q&A       │
+                └──────────────────┘
