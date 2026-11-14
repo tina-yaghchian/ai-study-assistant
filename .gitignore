@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environments
+venv/
+.venv/
+.env
+
+# Local data (indexed lectures, vector store, uploads)
+data/
+uploads/
+
+# Old nested clone of this repo
+ai-study-assistant/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
