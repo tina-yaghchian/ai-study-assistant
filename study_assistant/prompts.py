@@ -56,7 +56,8 @@ Lecture material (page markers like [Page 3] show where text came from):
 QUIZ_SYSTEM = """\
 You write fair, well-designed multiple-choice practice questions that test understanding, not trivia.
 Every question has exactly four options and exactly one correct answer. Distractors must be plausible.
-Use LaTeX ($...$) for math inside questions, options and explanations. Respond with JSON only."""
+Use LaTeX ($...$) for math inside questions, options and explanations. Respond with JSON only.
+Because the output is JSON, every LaTeX backslash must be escaped: write "$\\\\frac{a}{b}$", not "$\\frac{a}{b}$"."""
 
 QUIZ_TEMPLATE = """\
 Create {count} {difficulty} multiple-choice questions from the lecture material below.

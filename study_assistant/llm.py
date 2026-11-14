@@ -11,6 +11,44 @@ import ollama
 
 _THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL)
 
+# A single backslash followed by letters, not itself escaped by a preceding backslash.
+_BACKSLASH_WORD = re.compile(r"(?<!\\)((?:\\\\)*)\\([A-Za-z]+)")
+
+# LaTeX commands that start with a letter JSON treats as an escape (\b \f \n \r \t \u).
+# Written with one backslash inside JSON they would silently turn into control characters,
+# e.g. "\frac" -> form feed + "rac" and "\boldsymbol" -> backspace + "oldsymbol".
+LATEX_JSON_ESCAPE_COLLISIONS = {
+    "bar", "begin", "beta", "big", "Big", "bigg", "Bigg", "binom", "bm", "bmatrix", "boldsymbol", "bot",
+    "bf", "bullet", "frac", "forall", "flat", "frown", "nabla", "ne", "neg", "neq", "ni", "nmid", "not",
+    "notin", "nu", "nolimits", "newline", "rangle", "rbrace", "rceil", "rfloor", "rho", "right",
+    "Rightarrow", "rightarrow", "rm", "tan", "tanh", "tau", "text", "textbf", "textit", "textrm",
+    "theta", "Theta", "tilde", "times", "to", "top", "triangle", "uparrow", "Uparrow", "upsilon",
+    "underbrace", "underline", "union",
+}
+
+# A single backslash before a character that is never a valid JSON escape, e.g. "\{" or "\,".
+_BACKSLASH_SYMBOL = re.compile(r'(?<!\\)((?:\\\\)*)\\([^"\\/A-Za-z])')
+
+
+def repair_latex_escapes(raw: str) -> str:
+    """Double the backslashes of LaTeX commands that a model wrote unescaped inside JSON.
+
+    Models often emit ``"$\\frac{a}{b}$"`` in JSON with a single backslash. Unknown escapes
+    such as ``\\sqrt`` make ``json.loads`` fail, and escapes that happen to be valid
+    (``\\f``, ``\\b``, ``\\t``...) silently corrupt the text. Genuine JSON escapes such as
+    ``\\n`` before ordinary words and ``\\u00e9`` are left untouched.
+    """
+
+    def fix(match: re.Match[str]) -> str:
+        prefix, word = match.group(1), match.group(2)
+        is_json_escape = word[0] in "bfnrtu"
+        if is_json_escape and word not in LATEX_JSON_ESCAPE_COLLISIONS:
+            return match.group(0)  # a real escape such as "\n" or "\u00e9"
+        return f"{prefix}\\\\{word}"
+
+    raw = _BACKSLASH_WORD.sub(fix, raw)
+    return _BACKSLASH_SYMBOL.sub(lambda m: f"{m.group(1)}\\\\{m.group(2)}", raw)
+
 
 class LLMError(Exception):
     """A user-facing problem talking to the model (server down, model missing, bad output)."""
@@ -117,6 +155,6 @@ class OllamaLLM:
         response = self._chat(messages, format=schema)
         raw = strip_thinking(response.message.content or "")
         try:
-            return json.loads(raw)
+            return json.loads(repair_latex_escapes(raw))
         except json.JSONDecodeError as exc:
             raise LLMError("The model returned malformed JSON. Try again or pick a different model.") from exc
