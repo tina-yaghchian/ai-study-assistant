@@ -9,6 +9,7 @@ from typing import Any, Protocol
 
 from . import prompts
 from .documents import Document
+from .formatting import normalize_math
 from .store import SearchResult, StudyStore
 
 
@@ -159,17 +160,19 @@ def parse_quiz(data: dict[str, Any], limit: int | None = None) -> Quiz:
     questions: list[QuizQuestion] = []
     for item in data.get("questions", []) if isinstance(data, dict) else []:
         try:
-            options = [str(o).strip() for o in item["options"]][:4]
+            # Inline \frac is tiny next to a radio button; \dfrac keeps fractions readable.
+            options = [normalize_math(o).replace("\\frac", "\\dfrac") for o in item["options"]][:4]
             answer = int(item["answer_index"])
-            if len(options) != 4 or not 0 <= answer < 4 or not str(item["question"]).strip():
+            question = normalize_math(item["question"])
+            if len(options) != 4 or not all(options) or not 0 <= answer < 4 or not question:
                 continue
             page = item.get("page")
             questions.append(
                 QuizQuestion(
-                    question=str(item["question"]).strip(),
+                    question=question,
                     options=options,
                     answer_index=answer,
-                    explanation=str(item.get("explanation", "")).strip(),
+                    explanation=normalize_math(item.get("explanation", "")),
                     page=int(page) if isinstance(page, (int, float)) and page > 0 else None,
                 )
             )

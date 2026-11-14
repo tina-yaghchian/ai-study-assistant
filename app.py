@@ -12,6 +12,7 @@ import streamlit as st
 from study_assistant import __version__
 from study_assistant.config import get_settings
 from study_assistant.documents import DocumentError, file_id, load_pdf
+from study_assistant.formatting import markdown_math
 from study_assistant.llm import LLMError, OllamaLLM
 from study_assistant.rag import StudyAssistant
 from study_assistant.store import StudyStore
@@ -194,6 +195,19 @@ def render_welcome() -> None:
     )
 
 
+# ---------------------------------------------------------------------- streaming
+def stream_markdown(pieces) -> str:
+    """Render a token stream live, converting math delimiters as the text grows."""
+    placeholder = st.empty()
+    text = ""
+    for piece in pieces:
+        text += piece
+        placeholder.markdown(markdown_math(text))
+    text = markdown_math(text)
+    placeholder.markdown(text)
+    return text
+
+
 # ---------------------------------------------------------------------- chat
 AVATARS = {"user": ":material/person:", "assistant": ":material/menu_book:"}
 
@@ -235,7 +249,7 @@ def render_chat() -> None:
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"], avatar=AVATARS[message["role"]]):
-            st.markdown(message["content"])
+            st.markdown(markdown_math(message["content"]))
             render_sources(message.get("sources", []))
 
     question = st.chat_input("Ask anything about your lectures...")
@@ -251,7 +265,7 @@ def render_chat() -> None:
         try:
             with st.spinner("Searching your notes..."):
                 answer = assistant.ask(question, history=history, doc_ids=scope or None)
-            text = st.write_stream(answer.stream)
+            text = stream_markdown(answer.stream)
         except LLMError as exc:
             st.error(str(exc))
             return
@@ -260,7 +274,7 @@ def render_chat() -> None:
 
     st.session_state.messages += [
         {"role": "user", "content": question},
-        {"role": "assistant", "content": text if isinstance(text, str) else "".join(map(str, text)), "sources": sources},
+        {"role": "assistant", "content": text, "sources": sources},
     ]
 
 
@@ -273,7 +287,7 @@ def render_notes() -> None:
     generate = st.button("Generate study notes", type="primary")
     if generate:
         try:
-            text = st.write_stream(assistant.study_notes(doc_id, topic))
+            text = stream_markdown(assistant.study_notes(doc_id, topic))
             st.session_state.notes[doc_id] = text
             st.rerun()
         except LLMError as exc:
@@ -337,7 +351,10 @@ def render_quiz() -> None:
             st.write("")
         done = st.form_submit_button("Check answers", type="primary", disabled=submitted)
 
-    if done:
+    unanswered = [str(i + 1) for i, c in enumerate(choices) if c is None]
+    if done and unanswered:
+        st.warning(f"Answer every question before checking. Still open: {', '.join(unanswered)}.")
+    elif done:
         quiz["submitted"] = True
         quiz["score"] = sum(c == q.answer_index for c, q in zip(choices, questions))
         st.rerun()

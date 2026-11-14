@@ -85,3 +85,36 @@ def test_quiz_uses_document_material(store):
     q = quiz.questions[0]
     assert q.options[q.answer_index] == "a"  # correct answer tracked through the shuffle
     assert "[Page 2] A parabola" in llm.calls[0][-1]["content"]
+
+
+def test_parse_quiz_renders_math_in_questions_options_and_explanations():
+    data = {
+        "questions": [
+            {
+                # As decoded from JSON where the model wrote single backslashes:
+                "question": "What is \text{proj}_{\boldsymbol{u}} \boldsymbol{v}?",
+                "options": ["\x0crac{u \\cdot v}{\\|u\\|^2} u", "`u \\times v`", "`x^2`", "The zero vector"],
+                "answer_index": 0,
+                "explanation": "Use \x0crac{u \\cdot v}{\\|u\\|^2}.",
+                "page": 6,
+            }
+        ]
+    }
+    q = parse_quiz(data).questions[0]
+    assert q.question == r"What is $\text{proj}_{\boldsymbol{u}} \boldsymbol{v}$?"
+    assert q.options == [r"$\dfrac{u \cdot v}{\|u\|^2} u$", r"$u \times v$", "$x^2$", "The zero vector"]
+    assert q.explanation == r"Use $\frac{u \cdot v}{\|u\|^2}$."
+
+
+def test_markdown_math_converts_paren_delimiters():
+    from study_assistant.formatting import markdown_math
+
+    text = r"Ratio \(\frac{a}{b}\) and \[ e = \frac{c}{a} \] end, with a line break a \\[2pt] b"
+    assert markdown_math(text) == "Ratio $\\frac{a}{b}$ and \n$$\ne = \\frac{c}{a}\n$$\n end, with a line break a \\\\[2pt] b"
+
+
+def test_normalize_math_trims_padding_inside_inline_math():
+    from study_assistant.formatting import normalize_math
+
+    assert normalize_math("$ (3, 0) $") == "$(3, 0)$"
+    assert normalize_math("Since $ u = (1, 0) $ and $$ x^2 $$ hold") == "Since $u = (1, 0)$ and $$ x^2 $$ hold"
